@@ -1,0 +1,27 @@
+# Template for a real run: LoRA on a frozen Hugging Face encoder. Point train/val at your JSONL files.
+# Requires: pip install -e ".[hf]". The backbone name below is a placeholder; swap in your own.
+seed: 0
+model:
+  tokenizer: "hf:Qwen/Qwen3-Embedding-0.6B"
+  backbone: "hf:Qwen/Qwen3-Embedding-0.6B"
+  max_length: 512
+  pooling: last          # last-token pooling suits decoder-style embedding models
+  lora: {r: 64, lora_alpha: 128, lora_dropout: 0.05, target_modules: all-linear}
+loss: {log: 1.0, spherical: 0.5, rps: 1.0}
+optim: {lr: 0.0002, weight_decay: 0.0, warmup_steps: 200, min_lr_ratio: 0.1}
+data:
+  train_path: data/train.jsonl
+  val_path: data/val.jsonl
+  test_path: null
+  batch_size: 16
+  num_workers: 4
+trainer:
+  max_epochs: 1
+  accelerator: auto
+  devices: 1
+  precision: bf16-mixed
+  accumulate_grad_batches: 4
+  gradient_clip_val: 1.0
+  log_every_n_steps: 20
+  val_check_interval: 0.25
+  default_root_dir: outputs/default

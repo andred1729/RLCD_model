@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rlcd"
+version = "0.1.0"
+description = "Training and evaluation scaffold for System One style decision models (RLCD-style proper-scoring objective)."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.2",
+    "lightning>=2.2",
+    "numpy",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+hf = ["transformers>=4.40", "peft>=0.10"]
+dev = ["pytest", "ruff"]
+
+[project.scripts]
+rlcd-train = "rlcd.train:main"
+rlcd-eval = "rlcd.evaluate:main"
+rlcd-synth = "rlcd.synthetic:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::UserWarning", "ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 110
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["B905"]
