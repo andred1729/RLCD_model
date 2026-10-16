@@ -118,6 +118,7 @@ class RLCDDataModule(L.LightningDataModule):
             self.train_set = ExampleDataset(
                 load_jsonl(hp.train_path) if hp.train_path else make_synthetic(hp.synthetic_train, hp.seed)
             )
+        if stage in (None, "fit", "validate"):
             self.val_set = ExampleDataset(
                 load_jsonl(hp.val_path) if hp.val_path else make_synthetic(hp.synthetic_val, hp.seed + 1)
             )

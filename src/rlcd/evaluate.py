@@ -5,7 +5,8 @@
 
 Reports accuracy, NLL, Brier, ECE (and RPS on ordinal rows), overall and per ``source``, plus an
 option-order sensitivity check: each example is re-scored with shuffled options and we report the
-fraction of examples whose chosen option changes (0.0 for order-invariant models).
+fraction of examples whose chosen option changes. Tied top probabilities can change the chosen
+option through first-slot tie-breaking even when the probability distribution is unchanged.
 """
 
 from __future__ import annotations
@@ -64,7 +65,10 @@ def order_sensitivity(
     device: str = "cpu",
     seed: int = 0,
 ) -> dict[str, float]:
-    """Shuffle options of non-ordinal examples (ordinal order carries meaning) and compare."""
+    """Shuffle non-ordinal examples and compare choices using first-slot argmax tie-breaking.
+
+    Probability deltas are averaged across options within each example, then across examples.
+    """
     rng = random.Random(seed)
     keep, perms, shuffled = [], [], []
     for i, ex in enumerate(examples):
@@ -102,7 +106,7 @@ def evaluate(
     model.eval()
     probs = predict_probs(model, examples, tokenizer, max_length, batch_size, device)
     acc = MetricAccumulator()
-    k = max(len(ex.options) for ex in examples)
+    k = max((len(ex.options) for ex in examples), default=0)
     for ex, p in zip(examples, probs):
         padded = torch.zeros(1, k)
         padded[0, : len(p)] = p

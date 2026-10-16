@@ -1,8 +1,8 @@
 import pytest
 import torch
 
-from rlcd.data import Example
-from rlcd.evaluate import order_sensitivity
+from rlcd.data import Example, load_jsonl
+from rlcd.evaluate import evaluate, order_sensitivity
 from rlcd.tokenizer import ByteTokenizer
 
 
@@ -35,3 +35,15 @@ def test_order_sensitivity_reports_mean_absolute_probability_delta():
     )
     assert result["flip_rate"] == 1.0
     assert result["mean_abs_prob_delta"] == pytest.approx((0.5 + 0.3 + 0.2) / 3)
+
+
+@pytest.mark.parametrize("check_order", [True, False])
+def test_evaluate_empty_jsonl(tmp_path, check_order):
+    path = tmp_path / "empty.jsonl"
+    path.write_text("\n")
+    result = evaluate(FixedSlotScorer([0.5, 0.5]), load_jsonl(path), ByteTokenizer(), 64,
+                      check_order=check_order)
+    expected = {"overall": {"n": 0}, "by_source": {}}
+    if check_order:
+        expected["order_sensitivity"] = {"n": 0, "flip_rate": 0.0, "mean_abs_prob_delta": 0.0}
+    assert result == expected

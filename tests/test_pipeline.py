@@ -5,11 +5,13 @@ from pathlib import Path
 
 import pytest
 import yaml
+from lightning import Trainer
 
 from rlcd.config import load_config
-from rlcd.data import save_jsonl
+from rlcd.data import RLCDDataModule, save_jsonl
 from rlcd.evaluate import evaluate, load_checkpoint
 from rlcd.evaluate import main as eval_main
+from rlcd.lit import RLCDModule
 from rlcd.synthetic import make_synthetic
 from rlcd.train import train
 
@@ -47,6 +49,17 @@ def test_train_without_logging(tmp_path):
     best = train(cfg)
     assert Path(best).is_file()
     assert not (tmp_path / "run" / "logs").exists()
+
+
+def test_standalone_validation_does_not_load_training_data(tmp_path):
+    dm = RLCDDataModule(train_path=str(tmp_path / "missing-train.jsonl"), synthetic_val=4, max_length=32)
+    module = RLCDModule(model_cfg={"hidden_size": 8, "num_layers": 1, "num_heads": 2, "max_length": 32})
+    trainer = Trainer(accelerator="cpu", devices=1, logger=False, enable_checkpointing=False,
+                      enable_progress_bar=False, enable_model_summary=False, default_root_dir=tmp_path)
+    result = trainer.validate(module, datamodule=dm, verbose=False)
+    assert len(dm.val_set) == 4
+    assert dm.train_set is None
+    assert "val/loss" in result[0]
 
 
 def test_train_then_evaluate(tmp_path):
