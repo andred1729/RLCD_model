@@ -44,3 +44,12 @@ def test_lora_trains_only_adapters_and_head(tiny_bert):
     lora_grads = [p.grad for n, p in model.named_parameters() if "lora_" in n]
     assert any(g is not None and g.abs().sum() > 0 for g in lora_grads)
     assert torch.isfinite(loss)
+
+
+def test_bf16_checkpoint_runs_without_autocast(tiny_bert):
+    transformers.BertModel.from_pretrained(tiny_bert).to(torch.bfloat16).save_pretrained(tiny_bert)
+    cfg = ModelConfig(tokenizer=f"hf:{tiny_bert}", backbone=f"hf:{tiny_bert}", max_length=48, pooling="cls")
+    model, tok = build_model(cfg)
+    b = Collator(tok, 48)(make_synthetic(4, seed=0))
+    logits = model(b["input_ids"], b["attention_mask"], b["option_mask"])
+    assert logits.dtype == torch.float32
