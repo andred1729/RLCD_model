@@ -42,7 +42,9 @@ class HFBackbone(nn.Module):
         super().__init__()
         from transformers import AutoModel
 
-        self.model = AutoModel.from_pretrained(name_or_path)
+        # transformers>=5 loads in the checkpoint's dtype (often bf16); keep fp32 so the head matches
+        # outside autocast and mixed precision is left to the Lightning ``precision`` setting.
+        self.model = AutoModel.from_pretrained(name_or_path).float()
         self.hidden_size = int(self.model.config.hidden_size)
         if freeze or lora:
             for p in self.model.parameters():
