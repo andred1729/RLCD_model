@@ -32,9 +32,11 @@ class ByteTokenizer:
         if max_length < 4:
             raise ValueError("max_length must be >= 4")
         budget = max_length - 2  # BOS + SEP
-        opt = [b + self._offset for b in option.encode("utf-8")][: max(1, budget // 2)]
-        room = budget - len(opt)
         prm = [b + self._offset for b in prompt.encode("utf-8")]
+        # Reserve half the budget for options, plus any space a short prompt does not need.
+        option_budget = max(budget // 2, budget - len(prm))
+        opt = [b + self._offset for b in option.encode("utf-8")][:option_budget]
+        room = budget - len(opt)
         if len(prm) > room:  # keep the tail of the prompt: questions usually come last
             prm = prm[len(prm) - room :]
         return [self.bos_id, *prm, self.sep_id, *opt]

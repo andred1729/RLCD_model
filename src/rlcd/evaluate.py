@@ -83,8 +83,9 @@ def order_sensitivity(
     for i, perm, p_new in zip(keep, perms, new):
         restored = torch.zeros_like(base_probs[i])
         restored[torch.tensor(perm)] = p_new  # shuffled slot s holds original option perm[s]
-        flips += int(restored.argmax() != base_probs[i].argmax())
-        deltas.append((restored - base_probs[i]).abs().max().item())
+        chosen = perm[p_new.argmax().item()]
+        flips += int(chosen != base_probs[i].argmax().item())
+        deltas.append((restored - base_probs[i]).abs().mean().item())
     return {"n": len(keep), "flip_rate": flips / len(keep), "mean_abs_prob_delta": sum(deltas) / len(deltas)}
 
 

@@ -35,10 +35,14 @@ def train(cfg: dict) -> str:
     root = Path(trainer_cfg.pop("default_root_dir", "outputs"))
     ckpt = ModelCheckpoint(monitor="val/loss", mode="min", save_top_k=1, save_last=True,
                            filename="best-{epoch}-{step}")
+    logger = CSVLogger(root, name="logs") if cfg.get("log", True) else False
+    callbacks = [ckpt]
+    if logger:
+        callbacks.append(LearningRateMonitor(logging_interval="step"))
     trainer = L.Trainer(
         default_root_dir=root,
-        logger=CSVLogger(root, name="logs") if cfg.get("log", True) else False,
-        callbacks=[ckpt, LearningRateMonitor(logging_interval="step")],
+        logger=logger,
+        callbacks=callbacks,
         **trainer_cfg,
     )
     trainer.fit(module, datamodule=dm)
